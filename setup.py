@@ -21,4 +21,5 @@ setup(name='Income-Prediction-System',
      packages= find_packages(),
      install_requires=get_requriments("requirements.txt")
      )
+
      
