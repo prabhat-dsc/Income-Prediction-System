@@ -1,0 +1,1251 @@
+
+#################################################################################################################
+
+# Project: Income-Prediction-System 
+# Git: https://github.com/prabhat-dsc/Income-Prediction-System.git
+# Created By: Prabhat Kumar
+# Date : 17-04-2025
+
+#################################################################################################################
+
+# Problem Statement: As, We are working on Income Prediction problem associated with the Adult Income Census dataset. 
+                   # The goal is to accurately predict whether or not person is making more or less than $50,000 a year. 
+                   # It is classification problem. 
+
+# Dataset_columns = ['age','workclass','fnlwgt','education','education-num','marital-status','occupation',
+                  # 'relationship','race','sex','capital-gain','capital-loss','hours-per-week','country','salary']
+                  
+# Target column : salary (categorical value)   
+               
+### About the Dataset:
+#### Age: Describes the age of individuals. Continuous.
+#### Workclass: Private, Self-emp-not-inc, Self-emp-inc, Federal-gov, Local-gov, State-gov, Without-pay, Never-worked.
+#### fnlwgt: Continuous.
+#### education: Bachelors, Some-college, 11th, HS-grad, Prof-school, Assoc-acdm, Assoc-voc, 9th, 7th-8th, 12th, Masters, 1st-4th, 10th, Doctorate, 5th-6th, Preschool.
+#### education-num: Number of years spent in education. Continuous.
+#### marital-status: Married-civ-spouse, Divorced, Never-married, Separated, Widowed, Married-spouse-absent, Married-AF-spouse.
+#### occupation: Tech-support, Craft-repair, Other-service, Sales, Exec-managerial, Prof-specialty, Handlers-cleaners, Machine-op-inspct, Adm-clerical, Farming-fishing, Transport-moving, Priv-house-serv, Protective-serv, Armed-Forces.
+#### relationship: Wife, Own-child, Husband, Not-in-family, Other-relative, Unmarried.
+#### race: White, Asian-Pac-Islander, Amer-Indian-Eskimo, Other, Black.
+#### sex: Female, Male.
+#### capital-gain: Continuous.
+#### capital-loss: Continuous.
+#### hours-per-week: Continuous.
+#### native-country: United-States, Cambodia, England, Puerto-Rico, Canada, Germany, Outlying-US(Guam-USVI-etc), India, Japan, Greece, South, China, Cuba, Iran, Honduras, Philippines, Italy, Poland, Jamaica, Vietnam, Mexico, Portugal, Ireland, France, Dominican-Republic, Laos, Ecuador, Taiwan, Haiti, Columbia, Hungary, Guatemala, Nicaragua, Scotland, Thailand, Yugoslavia, El-Salvador, Trinadad&Tobago, Peru, Hong, Holand-Netherlands.
+#### salary: >50K,<=50K
+
+#################################################################################################################
+
+### Steps 1:
+
+```bash
+
+1. Git Repository :: Income-Prediction-Pipeline
+2. https://github.com/prabhat-dsc/Income-Prediction-Pipeline.git
+3. Setup.py
+4. requirements.txt
+
+ git add .
+ git commit -m 
+ git status
+ git push -u origin main
+ git pull
+ git pull -u origin main --rebase
+```
+### Steps 2: Create env 
+``bash
+conda create -p fsds_env python==3.8 -y      ## -p  means this env will create inside this project folder not in our system( our system space will be efficient)
+conda activate income_env/  # for git bash use : source activate income_env
+```
+### Steps 2: Create requirements.txt
+```bash
+pip install -r requirements.txt
+```
+### Steps 3: Create setup.py
+
+
+#################################################################################################################
+
+##########################################  requirements.txt  ###################################################
+numpy
+pandas
+Flask
+scikit-learn
+seaborm
+matplotlib
+-e .     #  -e indicate editable mode and . represent current directory
+
+##################################################################################################################
+
+############################################ setup.py    #########################################################
+
+from setuptools import find_packages, setup
+from typing import List
+
+HYPHON_E_DOT = "-e ."
+
+def get_requriments(filepath: str) -> List[str]:
+    requirements = []
+
+    with open(filepath) as file_obj:
+        requirements = file_obj.readlines()
+        requirements = [ i.replace("\n", "") for i in requirements]
+
+        if HYPHON_E_DOT in requirements:
+            requirements.remove(HYPHON_E_DOT)
+
+
+setup(name='Income-Prediction-System',
+     version='1.0.0',
+     description= " ML Income Prdiction System",
+     author="Prabhat Kumar",
+     author_email="prabhat.dsc48@gmail.com",
+     url= "https://github.com/prabhat-dsc/Income-Prediction-Pipeline.git",
+     python_requires=">=3.8",
+     packages= find_packages,
+     install_requires=get_requriments("requirements.txt")
+     )
+     
+##################################################################################################################
+                  Project Structure
+################################################################################################################## 
+
+src/---
+
+
+
+
+
+
+
+
+
+
+
+
+
+################################################################################################################## 
+
+############################################ logger.py #########################################################
+import os
+import sys
+import logging
+from datetime import datetime
+
+
+LOG_FILE = f"{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.log"
+
+log_path = os.path.join(os.getcwd(), "logs", LOG_FILE)
+
+os.makedirs(log_path, exist_ok= True)
+
+LOG_FILE_PATH = os.path.join(log_path, LOG_FILE)
+
+logging.basicConfig(
+    filename=LOG_FILE_PATH,
+    format="[ %(asctime)s ] %(lineno)d %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO
+                         )
+
+##################################################################################################################
+
+############################################ Exception.py ########################################################
+
+import os, sys
+from src.logger import logging
+
+
+
+def error_message_detailed(error, error_detailed:sys):
+    _, _, exc_tb = error_detailed.exc_info()
+
+    file_name = exc_tb.tb_frame.f_code.co_filename
+
+    error_message = "Error occured in python script name [{0}] line number [{1}] erro message [{2}]".format(
+        file_name, exc_tb.tb_lineno, str(error)
+    )
+
+    return error_message
+
+class CustmeException(Exception):
+    def __init__(self, error_message, error_detailed:sys):
+        super().__init__(error_message)
+        self.error_message = error_message_detailed(error_message, error_detailed = error_detailed)
+
+    def __str__(self):
+        return self.error_message
+    
+"""
+if __name__ =="__main__":
+    try:
+        a = 1 / 0
+
+    except Exception as e:
+        logging.info("Divison by Zero")
+        raise CustmeException(e,sys)
+"""        
+        
+-----------------------------------------------------------------------------------------------------------------
+                          components : ==>    Data Ingestion
+##################################################################################################################
+
+############################################# data_ingestion.py ##################################################
+
+# src\components\data_ingestion.py 
+
+
+import os, sys
+import pandas as pd
+import numpy as np
+from src.logger import logging
+from src.exception import CustmeException
+from dataclasses import dataclass
+from sklearn.model_selection import train_test_split
+from src.component.data_transfromation import DataTransformation
+from src.component.modrl_trainer import ModelTrainer
+
+@dataclass
+class DataIngestionConfig:
+    train_data_path = os.path.join("artifacts/data_ingestion", "train.csv")
+    test_data_path = os.path.join("artifacts/data_ingestion", "test.csv")
+    raw_data_path = os.path.join("artifacts/data_ingestion", "raw.csv")
+
+# notbook\data\income_cleandata.csv
+
+class DataIngestion:
+    def __init__(self):
+        self.ingestion_config = DataIngestionConfig()
+    
+    def inititate_data_ingestion(self):
+        logging.info("Data Ingestion started")
+        try:
+            logging.info("Data Reading using Pandas library from local system")
+            data = pd.read_csv(os.path.join("notbook/data", "income_cleandata.csv"))
+            logging.info("Data Reading completed")
+
+            os.makedirs(os.path.dirname(self.ingestion_config.raw_data_path), exist_ok=True)
+            data.to_csv(self.ingestion_config.raw_data_path, index=False)
+            logging.info("Dat spliteted into train and test")
+
+            train_set, test_set = train_test_split(data, test_size = .30, random_state=42)
+
+            train_set.to_csv(self.ingestion_config.train_data_path, index = False, header = True)
+            test_set.to_csv(self.ingestion_config.test_data_path, index = False, header = True)
+
+            logging.info("Data Ingestion completed")
+
+            return (
+                self.ingestion_config.train_data_path,
+                self.ingestion_config.test_data_path
+
+            )
+        except Exception as e:
+            logging.info("Erro occured in data ingestion stage")
+            raise CustmeException(e, sys)
+            
+"""
+if __name__ =="__main__":
+    obj = DataIngestion()
+    treain_data_path , test_data_path = obj.inititate_data_ingestion()
+
+    data_transformation = DataTransformation()
+    train_arr, test_arr, _ = data_transformation.inititate_data_transformation(treain_data_path , test_data_path)
+
+    modeltrainer = ModelTrainer()
+    print(modeltrainer.inititate_model_trainer(train_arr, test_arr))
+"""
+
+##################################################################################################################
+
+########################################  utils.py   ##############################################################
+
+# src\utils.py
+
+from src.logger import logging
+from src.exception import CustmeException
+import os, sys
+import pickle
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_curve, f1_score, precision_score, recall_score
+from sklearn.model_selection import GridSearchCV
+
+def save_object(file_path, obj):
+    try:
+        dir_path = os.path.dirname(file_path)
+
+        os.makedirs(dir_path, exist_ok= True)
+
+        with open(file_path, "wb") as file_obj:
+            pickle.dump(obj, file_obj)
+    except Exception as e:
+        raise CustmeException(e, sys)
+    
+def load_object(file_path):
+    try:
+        with open(file_path, "rb") as file_objt:
+            return pickle.load(file_objt)
+    except Exception as e:
+        raise CustmeException(e, sys)
+
+
+def evaluate_model(X_train, y_train, X_test, y_test, models, params):
+    try:
+        report = {}
+        for i in range(len(list(models))):
+            model = list(models.values())[i]
+            para = params[list(models.keys())[i]]
+
+            GS = GridSearchCV(model, para, cv = 5)
+            GS.fit(X_train, y_train)
+
+            model.set_params(**GS.best_params_)
+            model.fit(X_train, y_train)
+
+            # make prediction
+            y_pred = model.predict(X_test)
+            test_model_acuracy = accuracy_score(y_test, y_pred)
+
+            report[list(models.values())[i]] = test_model_acuracy
+
+            return report
+
+    except Exception as e:
+        raise CustmeException(e, sys)
+
+##################################################################################################################
+
+-----------------------------------------------------------------------------------------------------------------
+                       components :==>       Data Transformation
+##################################################################################################################
+
+############################################# data_transformation.py #############################################
+
+# Handle Missing value
+# Outliers treatment
+#Hanle Imblanced dataset
+#Convert categorical columns into numerical columns
+
+# src\components\data_transformation.py 
+
+import os, sys
+import pandas as pd
+import numpy as np
+from src.logger import logging
+from src.exception import CustmeException
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
+from dataclasses import dataclass
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from src.utils import save_object
+
+@dataclass
+class DataTransfromartionConfigs:
+    preprocess_obj_file_patrh = os.path.join("artifacts/data_transformation", "preprcessor.pkl")
+
+
+class DataTransformation:
+    def __init__(self):
+        self.data_transformation_config = DataTransfromartionConfigs()
+
+
+    def get_data_transformation_obj(self):
+        try:
+
+            logging.info(" Data Transformation Started")
+
+            numerical_features = ['age', 'workclass',  'education_num', 'marital_status',
+            'occupation', 'relationship', 'race', 'sex', 'capital_gain',
+            'capital_loss', 'hours_per_week', 'native_country']
+# age = 2,5,78, 32, 56, 
+            num_pipeline = Pipeline(
+                steps = [
+                ("imputer", SimpleImputer(strategy = 'median')),
+                ("scaler", StandardScaler())
+
+                
+                ]
+            )
+
+            preprocessor = ColumnTransformer([
+                ("num_pipeline", num_pipeline, numerical_features)
+            ])
+
+            return preprocessor
+
+
+        except Exception as e:
+            raise CustmeException(e, sys)
+        
+    def remote_outliers_IQR(self, col, df):
+        try:
+            Q1 = df[col].quantile(0.25)
+            Q3 = df[col].quantile(0.75)
+
+            iqr = Q3 - Q1
+
+            upper_limit = Q3 + 1.5 * iqr
+            lowwer_limit = Q1 - 1.5 * iqr
+
+            df.loc[(df[col]>upper_limit), col] = upper_limit
+            df.loc[(df[col]<lowwer_limit), col] = lowwer_limit
+
+            return df
+
+        except Exception as e:
+            logging.info("Outluers handling code")
+            raise CustmeException(e, sys)
+        
+    def inititate_data_transformation(self, train_path, test_path):
+
+        try:
+            train_data = pd.read_csv(train_path)
+            test_data = pd.read_csv(test_path)
+
+            numerical_features = ['age', 'workclass',  'education_num', 'marital_status',
+            'occupation', 'relationship', 'race', 'sex', 'capital_gain',
+            'capital_loss', 'hours_per_week', 'native_country']
+
+
+            for col in numerical_features:
+                self.remote_outliers_IQR(col = col, df = train_data)
+
+            logging.info("Outliers capped on our train data")
+
+
+            for col in numerical_features:
+                self.remote_outliers_IQR(col = col, df = test_data)
+
+            logging.info("Outliers capped on our test data")
+
+            preprocess_obj = self.get_data_transformation_obj()
+
+            traget_columns = "income"
+            drop_columns = [traget_columns]
+
+            logging.info("Splitting train data into dependent and independent features")
+            input_feature_train_data = train_data.drop(drop_columns, axis = 1)
+            traget_feature_train_data = train_data[traget_columns]
+
+            logging.info("Splitting test data into dependent and independent features")
+            input_feature_ttest_data = test_data.drop(drop_columns, axis = 1)
+            traget_feature_test_data = test_data[traget_columns]
+
+            # Apply transfpormation on our train data and test data
+            input_train_arr = preprocess_obj.fit_transform(input_feature_train_data)
+            input_test_arr = preprocess_obj.transform(input_feature_ttest_data)
+
+            # Apply preprocessor object on our train data and test data
+            train_array = np.c_[input_train_arr, np.array(traget_feature_train_data)]
+            test_array = np.c_[input_test_arr, np.array(traget_feature_test_data)]
+
+
+            save_object(file_path=self.data_transformation_config.preprocess_obj_file_patrh,    
+                        obj=preprocess_obj)     # save_object function is mentioned in utils.py to save the files and obj.
+            
+            return (train_array,
+                    test_array,
+                    self.data_transformation_config.preprocess_obj_file_patrh)
+
+
+
+        except Exception as e:
+            raise CustmeException(e, sys)
+
+##################################################################################################################
+
+-----------------------------------------------------------------------------------------------------------------
+                         components :==>       Model Trainer
+##################################################################################################################
+
+############################################# model_training.py ##################################################
+
+# src\components\model_training.py 
+
+import os, sys
+import pandas as pd
+import numpy as np
+from src.logger import logging
+from src.exception import CustmeException
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
+from dataclasses import dataclass
+from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from src.utils import save_object
+from src.utils import evaluate_model
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import GridSearchCV
+
+@dataclass
+class ModelTrainerConfig:
+    train_model_file_apth = os.path.join("artifacts/model_trainer", "model.pkl")
+
+class ModelTrainer:
+    def __init__(self):
+        self.model_trainer_config = ModelTrainerConfig()
+
+    def inititate_model_trainer(self, train_array, test_array):
+        try:
+            logging.info("Splitting our data into dependent and independent features")
+            X_train, y_train, X_test, y_test  = (
+                train_array[:, :-1],
+                train_array[:, -1],
+                test_array[:, :-1],
+                test_array[:, -1]
+            )
+# 
+            model = {
+                "Random Forest": RandomForestClassifier(),
+                "Decision Tree": DecisionTreeClassifier(),
+                "Logastic": LogisticRegression()
+            }
+
+            params = {
+                "Random Forest":{
+                    "class_weight":["balanced"],
+                    'n_estimators': [20, 50, 30],
+                    'max_depth': [10, 8, 5],
+                    'min_samples_split': [2, 5, 10],
+                },
+                "Decision Tree":{
+                    "class_weight":["balanced"],
+                    "criterion":['gini',"entropy","log_loss"],
+                    "splitter":['best','random'],
+                    "max_depth":[3,4,5,6],
+                    "min_samples_split":[2,3,4,5],
+                    "min_samples_leaf":[1,2,3],
+                    "max_features":["auto","sqrt","log2"]
+                },
+                "Logastic":{
+                    "class_weight":["balanced"],
+                    'penalty': ['l1', 'l2'],
+                    'C': [0.001, 0.01, 0.1, 1, 10, 100],
+                    'solver': ['liblinear', 'saga']
+                }
+            }
+
+            model_report:dict = evaluate_model(X_train = X_train, y_train = y_train, X_test = X_test, y_test =y_test,
+                                                models = model, params = params)
+            
+            # To gest best model from our report Dict
+            best_model_score = max(sorted(model_report.values()))
+
+            best_model_name = list(model.keys())[
+                list(model_report.values()).index(best_model_score)
+            ]
+
+            best_model = model[best_model_name]
+            
+            print(f"Best Model Found, Model Name is: {best_model_name},Accuracy_Score: {best_model_score}")
+            print("\n***************************************************************************************\n")
+            logging.info(f"best model found, Model Name is {best_model_name}, accuracy Score: {best_model_score}")
+
+
+            save_object(file_path=self.model_trainer_config.train_model_file_apth,
+                        obj = best_model
+                        )
+
+        except Exception as e:
+            raise CustmeException(e, sys)
+            
+##################################################################################################################
+
+-----------------------------------------------------------------------------------------------------------------
+                         pipeline :==>    training_pipeline
+##################################################################################################################   
+                        
+######################################### training_pipeline.py   ##################################################
+
+# src\pipeline\training_pipeline.py
+
+import os, sys
+from src.logger import logging
+from src.exception import CustmeException
+from src.component.data_ingestion import DataIngestion
+from src.component.data_transfromation import DataTransformation
+from src.component.modrl_trainer import ModelTrainer
+from dataclasses import dataclass
+
+if __name__ == "__main__":
+    obj = DataIngestion()
+    train_data_path, test_data_path = obj.inititate_data_ingestion()
+    data_transformation = DataTransformation()
+    train_arr, test_arr, _ = data_transformation.inititate_data_transformation(train_data_path, test_data_path)
+    model_training = ModelTrainer()
+    model_training.inititate_model_trainer(train_arr, test_arr)
+
+
+##################################################################################################################
+
+-----------------------------------------------------------------------------------------------------------------
+                         pipeline :==>    prediction_pipeline
+##################################################################################################################  
+
+######################################### prediction_pipeline.py   ##################################################
+
+# src\pipeline\prediction_pipeline.py
+
+
+# Create prediction peipeline class -> completed
+# create function for load a object -> completed
+# Create custome class basd upon our dataset -> completed
+# Create function to convert data into Dataframe with the help of DIct
+
+import os, sys
+from src.logger import logging
+from src.exception import CustmeException
+import numpy as np
+import pandas as pd
+from dataclasses import dataclass
+from src.utils import load_object
+
+class PredictionPipeline:
+    def __init__(self):
+        pass
+
+    def predict(self, features):
+        preprocessro_path = os.path.join("artifacts/data_transformation", "preprcessor.pkl")
+        model_path = os.path.join("artifacts/model_trainer", "model.pkl")
+
+        processor = load_object(preprocessro_path)
+        model = load_object(model_path)
+
+
+        scaled = processor.transform(features)
+        pred = model.predict(scaled)
+
+        return pred
+
+
+class CustomeClass:
+    def __init__(self, 
+                  age:int,
+                  workclass:int, 
+                  education_num:int, 
+                  marital_status:int, 
+                  occupation:int,
+                  relationship:int,  
+                  race:int,
+                  sex:int,  
+                  capital_gain:int, 
+                  capital_loss:int,
+                  hours_per_week:int, 
+                  native_country:int):
+        self.age = age
+        self.workclass = workclass
+        self.education_num = education_num
+        self.marital_status = marital_status
+        self.occupation = occupation
+        self.relationship = relationship
+        self.race = race
+        self.sex = sex
+        self.capital_gain = capital_gain
+        self.capital_loss = capital_loss
+        self.hours_per_week = hours_per_week
+        self.native_country = native_country
+
+
+    def get_data_DataFrame(self):
+        try:
+            custom_input = {
+                "age": [self.age],
+                "workclass": [self.workclass],
+                "education_num":[self.education_num],
+                "marital_status":[self.marital_status],
+                "occupation":[self.occupation],
+                "relationship":[self.relationship],
+                "race":[self.race],
+                "sex":[self.sex],
+                "capital_gain":[self.capital_gain],
+                "capital_loss":[self.capital_loss],
+                "hours_per_week":[self.hours_per_week],
+                "native_country":[self.native_country]
+
+            }
+
+            data= pd.DataFrame(custom_input)
+
+            return data
+        except Exception as e:
+            raise CustmeException(e, sys)
+            
+##################################################################################################################
+
+-----------------------------------------------------------------------------------------------------------------
+                         templates :==>    home.html & results.html
+##################################################################################################################  
+
+#########################################  home.html  ############################################################  
+# templates\home.html
+
+<html>
+
+<head>
+    <title>Machine Learning Pipeline project</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        input[type=text],
+        select,
+        textarea {
+            width: 50%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: vertical;
+        }
+
+        label {
+            padding: 12px 12px 12px 0;
+            display: inline-block;
+        }
+
+        input[type=submit] {
+            background-color: #04AA6D;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            float: right;
+        }
+
+        input[type=submit]:hover {
+            background-color: #45a049;
+        }
+
+        .container {
+            border-radius: 5px;
+            background-color: #f2f2f2;
+            padding: 20px;
+        }
+
+        .col-25 {
+            float: left;
+            width: 25%;
+            margin-top: 6px;
+        }
+
+        .col-75 {
+            float: left;
+            width: 75%;
+            margin-top: 6px;
+        }
+
+        /* Clear floats after the columns */
+        .row:after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+
+        /* Responsive layout - when the screen is less than 600px wide, make the two columns stack on top of each other instead of next to each other */
+        @media screen and (max-width: 600px) {
+
+            .col-25,
+            .col-75,
+            input[type=submit] {
+                width: 100%;
+                margin-top: 0;
+            }
+        }
+
+        h1 {
+            padding: 15px;
+            margin: 25px;
+
+            /* other styling */
+            background-color: #33475b;
+            border-radius: 50px;
+            color: white;
+            font-family: Avenir;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1 style="text-align:center;">Machine Learning Pipeline project</h1>
+    <div class="form">
+        <form action="{{url_for('prediction_data')}}" method="POST">
+            <label for="operation"></label>
+
+            <div class="container">
+                <form action="/action_page.php">
+                    <div class="row">
+                        <div class="col-25">
+                            <label for="age">age</label>
+                        </div>
+                        <div class="col-75">
+                            <input type="text" id="age" name="age" placeholder="Enter your Age..">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-25">
+                            <label for="workclass">Select your workclass</label>
+                        </div>
+                        <div class="col-75">
+                            <select id="workclass" name="workclass">
+                                <option value="6">State-gov</option>
+                                <option value="5">Self-emp-not-inc</option>
+                                <option value="3">Private</option>
+                                <option value="0">Federal-gov</option>
+                                <option value="1">Local-gov</option>
+                                <option value="4">Self-emp-inc</option>
+                                <option value="7">Without-pay</option>
+                                <option value="2">Never-worked</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form">
+                        <div class="col-25">
+                            <label for="education_num">Choose your Education</label>
+                        </div>
+                        <div class="col-75">
+                            <select id="education_num" name="education_num">
+                                <option value="13">Bachelors</option>
+                                <option value="9">HS-grad</option>
+                                <option value="7">11th</option>
+                                <option value="14">Masters</option>
+                                <option value="5">9th</option>
+                                <option value="10">Some-college</option>
+                                <option value="12">Assoc-acdm</option>
+                                <option value="11">Assoc-voc</option>
+                                <option value="4">7th-8th</option>
+                                <option value="16">Doctorate</option>
+                                <option value="15">Prof-school</option>
+                                <option value="3">5th-6th</option>
+                                <option value="6">10th</option>
+                                <option value="2">1st-4th</option>
+                                <option value="1">Preschool</option>
+                                <option value="8">12th</option>
+                            </select>
+                        </div>
+                        
+                    </div>
+                    <div class="form">
+                        <div class="col-25">
+                            <label for="marital_status">Choose your marital_status</label>
+                        </div>
+                        <div class="col-75">
+                            <select id="marital_status" name="marital_status">
+                                <option value="4">Never-married</option>
+                                <option value="2">Married-civ-spouse</option>
+                                <option value="0">Divorced</option>
+                                <option value="3">Married-spouse-absent</option>
+                                <option value="5">Separated</option>
+                                <option value="1">Married-AF-spouse</option>
+                                <option value="6">Widowed</option>
+                            </select>
+                        </div>
+                        
+                    </div>
+                    <div class="form">
+                        <div class="col-25">
+                            <label for="occupation">Choose your occupation</label>
+                        </div>
+                        <div class="col-75">
+                            <select id="occupation" name="occupation">
+                                <option value="0">Adm-clerical</option>
+                                <option value="3">Exec-managerial</option>
+                                <option value="5">Handlers-cleaners</option>
+                                <option value="9">Prof-specialty</option>
+                                <option value="7">Other-service</option>
+                                <option value="11">Sales</option>
+                                <option value="2">Craft-repair</option>
+                                <option value="13">Transport-moving</option>
+                                <option value="4">Farming-fishing</option>
+                                <option value="6">Machine-op-inspct</option>
+                                <option value="12">Tech-support</option>
+                                <option value="10">Protective-serv</option>
+                                <option value="1">Armed-Forces</option>
+                                <option value="8">Priv-house-serv</option>
+                            </select>
+                        </div>
+                        
+                    </div>
+                    <div class="form">
+                        <div class="col-25">
+                            <label for="relationship">Choose your relationship</label>
+                        </div>
+                        <div class="col-75">
+                            <select id="relationship" name="relationship">
+                                <option value="1">Not-in-family</option>
+                                <option value="0">Husband</option>
+                                <option value="5">Wife</option>
+                                <option value="3">Own-child</option>
+                                <option value="4">Unmarried</option>
+                                <option value="2">Other-relative</option>
+                            </select>
+                        </div>
+                        
+                    </div>
+
+                    <div class="form">
+                        <div class="col-25">
+                            <label for="race">Choose your race</label>
+                        </div>
+                        <div class="col-75">
+                            <select id="race" name="race">
+                                <option value="4">White</option>
+                                <option value="2">Black</option>
+                                <option value="1">Asian-Pac-Islander</option>
+                                <option value="0">Amer-Indian-Eskimo</option>
+                                <option value="3">Other</option>
+                            </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-25">
+                            <label for="sex">sex</label>
+                        </div>
+                        <div class="col-75">
+                            <select id="sex" name="sex">
+                                <option value="0">Female</option>
+                                <option value="1">Male</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-25">
+                            <label for="capital_gain">capital_gain</label>
+                        </div>
+                        <div class="col-75">
+                            <input type="text" id="capital_gain" name="capital_gain" placeholder="Enter value (float)">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-25">
+                            <label for="capital_loss">capital_loss</label>
+                        </div>
+                        <div class="col-75">
+                            <input type="text" id="capital_loss" name="capital_loss" placeholder="Enter value (float)">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-25">
+                            <label for="hours_per_week">hours_per_week</label>
+                        </div>
+                        <div class="col-75">
+                            <input type="text" id="hours_per_week" name="hours_per_week" placeholder="Enter value (float)">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-25">
+                            <label for="native_country">native_country</label>
+                        </div>
+                        <div class="col-75">
+                            <select id="native_country" name="native_country">
+                                <option value="38">United-States</option>
+                                <option value="4">Cuba</option>
+                                <option value="22">Jamaica</option>
+                                <option value="18">India</option>
+                                <option value="25">Mexico</option>
+                                <option value="34">South</option>
+                                <option value="32">Puerto-Rico</option>
+                                <option value="15">Honduras</option>
+                                <option value="8">England</option>
+                                <option value="1">Canada</option>
+                                <option value="10">Germany</option>
+                                <option value="19">Iran</option>
+                                <option value="29">Philippines</option>
+                                <option value="21">Italy</option>
+                                <option value="30">Poland</option>
+                                <option value="3">Columbia</option>
+                                <option value="0">Cambodia</option>
+                                <option value="36">Thailand</option>
+                                <option value="6">Ecuador</option>
+                                <option value="24">Laos</option>
+                                <option value="35">Taiwan</option>
+                                <option value="13">Haiti</option>
+                                <option value="31">Portugal</option>
+                                <option value="5">Dominican-Republic</option>
+                                <option value="7">El-Salvador</option>
+                                <option value="9">France</option>
+                                <option value="12">Guatemala</option>
+                                <option value="2">China</option>
+                                <option value="23">Japan</option>
+                                <option value="40">Yugoslavia</option>
+                                <option value="28">Peru</option>
+                                <option value="27">Outlying-US(Guam-USVI-etc)</option>
+                                <option value="33">Scotland</option>
+                                <option value="37">Trinadad-Tobago</option>
+                                <option value="11">Greece</option>
+                                <option value="26">Nicaragua</option>
+                                <option value="39">Vietnam</option>
+                                <option value="16">Hong</option>
+                                <option value="20">Ireland</option>
+                                <option value="17">Hungary</option>
+                                <option value="14">Holand-Netherlands</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row" class="center">
+                        <input type="submit" value="Submit">
+                    </div>
+                </form>
+            </div>
+</body>
+
+</html>
+
+##################################################################################################################  
+
+#########################################  results.html  ##########################################################
+
+# templates\results.html
+
+<!DOCTYPE html>
+<html lang="en" >
+
+<head>
+  <meta charset="UTF-8">
+  <title>Python Project </title>
+</head>
+<body>
+  <div class="table-users">
+   <div class="header">Income Result</div>
+
+      {{final_result}}
+</div>
+</body>
+<style>
+  body {
+  background-color: #c8d2d3;
+}
+body * {
+  box-sizing: border-box;
+}
+
+.header {
+  background-color: #303e3f;
+  color: white;
+  font-size: 1.5em;
+  padding: 1rem;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+img {
+  border-radius: 50%;
+  height: 60px;
+  width: 60px;
+}
+
+.table-users {
+  border: 1px solid #327a81;
+  border-radius: 10px;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
+  max-width: calc(100% - 2em);
+  margin: 1em auto;
+  overflow: hidden;
+  width: 800px;
+}
+
+table {
+  width: 100%;
+}
+table td, table th {
+  color: #2b686e;
+  padding: 10px;
+}
+table td {
+  text-align: center;
+  vertical-align: middle;
+}
+table td:last-child {
+  font-size: 0.95em;
+  line-height: 1.4;
+  text-align: left;
+}
+table th {
+  background-color: #daeff1;
+  font-weight: 300;
+}
+table tr:nth-child(2n) {
+  background-color: white;
+}
+table tr:nth-child(2n+1) {
+  background-color: #edf7f8;
+}
+
+@media screen and (max-width: 700px) {
+  table, tr, td {
+    display: block;
+  }
+
+  td:first-child {
+    position: absolute;
+    top: 50%;
+    -webkit-transform: translateY(-50%);
+            transform: translateY(-50%);
+    width: 100px;
+  }
+  td:not(:first-child) {
+    clear: both;
+    margin-left: 100px;
+    padding: 4px 20px 4px 90px;
+    position: relative;
+    text-align: left;
+  }
+  td:not(:first-child):before {
+    color: #91ced4;
+    content: '';
+    display: block;
+    left: 0;
+    position: absolute;
+  }
+  td:nth-child(2):before {
+    content: 'Name:';
+  }
+  td:nth-child(3):before {
+    content: 'Email:';
+  }
+  td:nth-child(4):before {
+    content: 'Phone:';
+  }
+  td:nth-child(5):before {
+    content: 'Comments:';
+  }
+
+  tr {
+    padding: 10px 0;
+    position: relative;
+  }
+  tr:first-child {
+    display: none;
+  }
+}
+@media screen and (max-width: 500px) {
+  .header {
+    background-color: transparent;
+    color: white;
+    font-size: 2em;
+    font-weight: 700;
+    padding: 0;
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  img {
+    border: 3px solid;
+    border-color: #daeff1;
+    height: 100px;
+    margin: 0.5rem 0;
+    width: 100px;
+  }
+
+  td:first-child {
+    background-color: #c8e7ea;
+    border-bottom: 1px solid #91ced4;
+    border-radius: 10px 10px 0 0;
+    position: relative;
+    top: 0;
+    -webkit-transform: translateY(0);
+            transform: translateY(0);
+    width: 100%;
+  }
+  td:not(:first-child) {
+    margin: 0;
+    padding: 5px 1em;
+    width: 100%;
+  }
+  td:not(:first-child):before {
+    font-size: .8em;
+    padding-top: 0.3em;
+    position: relative;
+  }
+  td:last-child {
+    padding-bottom: 1rem !important;
+  }
+
+  tr {
+    background-color: white !important;
+    border: 1px solid #6cbec6;
+    border-radius: 10px;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+    margin: 0.5rem 0;
+    padding: 0;
+  }
+
+  .table-users {
+    border: none;
+    box-shadow: none;
+    overflow: visible;
+  }
+}
+
+</style>
+</html>
+
+##################################################################################################################  
+
+-----------------------------------------------------------------------------------------------------------------
+                       app :==>       app
+##################################################################################################################
+
+############################################# app.py #############################################################
+
+# app.py
+
+from flask import Flask, render_template, request, jsonify
+from src.pipeline.preediction_pipeline import PredictionPipeline, CustomeClass
+
+app = Flask(__name__)
+
+@app.route("/",methods = ["GET", "POST"])
+def prediction_data():
+    if request.method == "GET":
+        return render_template("home.html")
+    
+    else:
+        data = CustomeClass(
+            age = int(request.form.get("age")),
+            workclass = int(request.form.get("workclass")),
+            education_num = int(request.form.get("education_num")),
+            marital_status = int(request.form.get("marital_status")),
+            occupation = int(request.form.get("occupation")),
+            relationship = int(request.form.get("relationship")),
+            race = int(request.form.get("race")),
+            sex = int(request.form.get("sex")),
+            capital_gain = int(request.form.get("capital_gain")),
+            capital_loss = int(request.form.get("capital_loss")),
+            hours_per_week = int(request.form.get("hours_per_week")),
+            native_country = int(request.form.get("native_country")),
+
+        )
+
+    final_data = data.get_data_DataFrame()
+    pipeline_prediction = PredictionPipeline()
+    pred = pipeline_prediction.predict(final_data)
+
+    result = pred
+
+    if result == 0:
+        return render_template("results.html", final_result = "Your Yearly Income is Less than Equal to 50k:{}".format(result) )
+
+    elif result == 1:
+            return render_template("results.html", final_result = "Your Yearly Income is More than 50k:{}".format(result) )
+    
+if __name__ == "__main__":
+     app.run(host = "0.0.0.0", debug = True)
+
+
+##################################################################################################################  
+
+---------------------------------------- :::::~ THE END ~::::: --------------------------------------------------
+                  
+##################################################################################################################
+
+    
+
+
+
+
+
+        
